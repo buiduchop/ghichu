@@ -11,6 +11,7 @@
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
 <title>Ghi chú PC</title>
@@ -33,6 +34,7 @@ main{padding:0 14px 150px;max-width:700px;margin:0 auto}
 .box.done{background:var(--accent);border-color:var(--accent)}
 .box.done::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .txt{flex:1;white-space:pre-wrap;word-break:break-word}
+.mark{flex:none;min-width:14px;color:var(--fg2);margin-right:-4px}
 .done+.txt{color:var(--fg2);text-decoration:line-through}
 .pending{opacity:.6}
 .pending .txt::after{content:"  · chờ máy tính";font-size:12px;color:var(--fg2)}
@@ -62,6 +64,7 @@ footer{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(env(safe-are
 <textarea id="input" rows="1" placeholder="Ghi chú…" enterkeyhint="send"></textarea>
 <button id="send" disabled aria-label="Gửi">↑</button></div></footer>
 <div class="sheet" id="sheet"><div class="panel"><textarea id="editText"></textarea>
+<p class="hint" id="editNote" style="display:none;text-align:left">Dòng này có định dạng (đậm, màu…). Sửa chữ trên iPhone thì dòng sẽ thành chữ thường; tick ✓ hoặc xóa thì không ảnh hưởng.</p>
 <div class="btns"><button class="del" id="btnDel">Xóa dòng</button><button id="btnCancel">Hủy</button><button class="primary" id="btnSave">Lưu</button></div></div></div>
 <script>
 (function(){
@@ -105,27 +108,37 @@ function taskOn(){return asTask===null?!!(snap&&snap.taskdef):asTask;}
 function paintTask(){var on=taskOn();taskBtn.className=on?"on":"";taskBtn.textContent=on?"☑":"☐";}
 function failText(err){
   if(err&&err.message==="bad-key")return"Mã không khớp – quét lại mã QR trên máy tính";
-  if(err&&err.message==="bad-reply")return"Mã bên Google cũ – cập nhật trong Cài đặt trên máy tính";
+  if(err&&err.message==="bad-reply")return"Google đang bận – sẽ tự thử lại";
   return null;
 }
 
 // Áp các thay đổi đang chờ lên bản sao từ máy tính để thấy ngay kết quả
 function findIdx(items,o){if(o.i>=0&&o.i<items.length&&items[o.i]&&!items[o.i].gone&&items[o.i].t===o.line)return o.i;
   for(var j=0;j<items.length;j++)if(!items[j].gone&&items[j].t===o.line)return j;return -1;}
-function build(){var items=((snap&&snap.items)||[]).map(function(x,i){return{t:x.t,k:x.k,src:i};});
+function build(){var items=((snap&&snap.items)||[]).map(function(x,i){return{t:x.t,k:x.k,r:x.r,m:x.m,src:i};});
   ops.concat(outbox).forEach(function(o){
     if(o.op==="add"){var task=o.task==null?!!(snap&&snap.taskdef):o.task;String(o.t).split("\n").forEach(function(l){if(l.trim())items.push({t:l.replace(/\s+$/,""),k:task?1:0,pending:true});});return;}
     var j=findIdx(items,o);if(j<0)return;
     if(o.op==="toggle"&&items[j].k>0){items[j].k=o.done?2:1;items[j].pending=true;}
-    else if(o.op==="edit"){items[j].t=String(o.t).replace(/\n/g," ").trim();items[j].pending=true;}
+    else if(o.op==="edit"){items[j].t=String(o.t).replace(/\n/g," ").trim();items[j].r=null;items[j].pending=true;}
     else if(o.op==="delete"){items[j].gone=true;}
   });
   return items;}
-function render(){view=build();list.innerHTML="";var shown=0;
+// Cỡ chữ theo máy tính (đổi cỡ chữ trên máy tính là iPhone đổi theo)
+function applyFont(){var fs=snap&&Number(snap.fs);if(fs>0)list.style.fontSize=Math.max(12,Math.min(32,fs))+"px";}
+function render(){view=build();list.innerHTML="";var shown=0;applyFont();
   view.forEach(function(it,i){if(it.gone||(!it.t&&it.k===0))return;shown++;
     var row=document.createElement("div");row.className="row"+(it.pending?" pending":"");
     if(it.k>0){var b=document.createElement("div");b.className="box"+(it.k===2?" done":"");b.onclick=function(e){e.stopPropagation();toggle(i);};row.appendChild(b);}
-    var t=document.createElement("div");t.className="txt";t.textContent=it.t||" ";row.appendChild(t);
+    if(it.m){var m=document.createElement("div");m.className="mark";m.textContent=it.m;row.appendChild(m);}
+    var t=document.createElement("div");t.className="txt";
+    // Giữ định dạng giống máy tính: đậm, nghiêng, gạch chân, gạch ngang, màu chữ, tô sáng
+    if(it.r&&it.r.length){it.r.forEach(function(s){var e=document.createElement("span");e.textContent=s.x;var f=s.f||"",d=[];
+      if(f.indexOf("b")>=0)e.style.fontWeight="700";if(f.indexOf("i")>=0)e.style.fontStyle="italic";
+      if(f.indexOf("u")>=0)d.push("underline");if(f.indexOf("s")>=0)d.push("line-through");if(d.length)e.style.textDecoration=d.join(" ");
+      if(s.c)e.style.color=s.c;if(s.g){e.style.background=s.g;e.style.borderRadius="3px";}t.appendChild(e);});}
+    else t.textContent=it.t||" ";
+    row.appendChild(t);
     row.onclick=function(){openEdit(i);};list.appendChild(row);});
   if(!shown){list.innerHTML=snap?"<div class=empty>Chưa có ghi chú nào.<br>Gõ ở ô bên dưới để thêm.</div>":"<div class=empty>Đang tải ghi chú…</div>";}
   $("hint").textContent=shown?"Chạm vào một dòng để sửa hoặc xóa":"";
@@ -135,18 +148,20 @@ function render(){view=build();list.innerHTML="";var shown=0;
   sub.textContent=parts.join(" · ");paintTask();}
 function apply(st){if(!st)return;if(st.snap){snap=st.snap;ls("qn_snap",JSON.stringify(snap));}ops=st.ops||[];
   if(editing<0)render();}
-function refresh(){if(busy||loading)return;loading=true;
-  api("state").then(function(st){loading=false;setStatus(true,"Đã kết nối");apply(st);flush();},
+// gen tăng mỗi lần gửi xong: kết quả tải về từ TRƯỚC lúc gửi xong là bản cũ -> bỏ qua (tránh dòng vừa gửi chớp mất)
+var gen=0;
+function refresh(){if(busy||loading)return;loading=true;var g0=gen;
+  api("state").then(function(st){loading=false;setStatus(true,"Đã kết nối");if(g0===gen)apply(st);flush();},
     function(err){loading=false;setStatus(false,failText(err)||"Không có mạng – vẫn ghi được, có mạng sẽ tự gửi");});}
 function flush(){if(busy||!outbox.length)return;busy=true;var o=outbox[0];
-  api("op",o).then(function(st){outbox.shift();saveOut();busy=false;setStatus(true,"Đã kết nối");apply(st);flush();},
+  api("op",o).then(function(st){gen++;outbox.shift();saveOut();busy=false;setStatus(true,"Đã kết nối");apply(st);flush();},
     function(err){busy=false;setStatus(false,failText(err)||(canStore?"Chưa gửi được (mất mạng?) – sẽ tự gửi lại":"Chưa gửi được – GIỮ TRANG NÀY MỞ, có mạng sẽ tự gửi"));if(editing<0)render();setTimeout(flush,5000);});}
 function queue(o){o.id=nid();outbox.push(o);saveOut();render();flush();}
 function add(){var t=input.value.replace(/\s+$/,"");if(!t.trim())return;queue({op:"add",t:t,task:taskOn()});input.value="";grow();send.disabled=true;
   setTimeout(function(){window.scrollTo(0,document.body.scrollHeight);},50);}
 function toggle(i){var it=view[i];if(!it||it.k===0)return;queue({op:"toggle",i:it.src==null?-1:it.src,line:it.t,done:it.k!==2});}
 function openEdit(i){var it=view[i];if(!it)return;if(it.src==null){alert("Dòng này đang chờ máy tính nhận – sửa được sau khi máy tính đã nhận.");return;}
-  editing=i;$("editText").value=it.t;$("sheet").className="sheet show";setTimeout(function(){$("editText").focus();},50);}
+  editing=i;$("editText").value=it.t;$("editNote").style.display=it.r&&it.r.length?"block":"none";$("sheet").className="sheet show";setTimeout(function(){$("editText").focus();},50);}
 function closeEdit(){editing=-1;$("sheet").className="sheet";render();}
 $("btnCancel").onclick=closeEdit;
 $("sheet").onclick=function(e){if(e.target===this)closeEdit();};
