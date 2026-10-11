@@ -86,7 +86,8 @@ if(!cfg||!cfg.u||!cfg.k){
 function api(a,body){
   var u=cfg.u+"?k="+encodeURIComponent(cfg.k)+"&a="+a+"&_="+Date.now();
   // Gửi dạng chữ thường (text/plain) để trình duyệt không phải hỏi trước -> nhanh hơn
-  var opt=body===undefined?{cache:"no-store"}:{method:"POST",body:JSON.stringify(body),cache:"no-store"};
+  // keepalive: thoát khỏi trang ngay sau khi bấm gửi thì iPhone vẫn gửi nốt
+  var opt=body===undefined?{cache:"no-store"}:{method:"POST",body:JSON.stringify(body),cache:"no-store",keepalive:true};
   return fetch(u,opt).then(function(r){if(!r.ok)throw new Error("http "+r.status);return r.text();}).then(function(t){
     var st;try{st=JSON.parse(t);}catch(e){throw new Error(/Mã kết nối/.test(t)?"bad-key":"bad-reply");}
     if(st&&st.error)throw new Error(st.error);return st;});
@@ -160,7 +161,13 @@ send.onclick=add;
 taskBtn.onclick=function(){asTask=!taskOn();ls("qn_task",asTask?"1":"0");paintTask();input.focus();};
 render();refresh();
 setInterval(function(){if(document.visibilityState!=="hidden")refresh();},6000);
-document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")refresh();});
+// Rời trang (về màn hình chính, khóa máy) khi còn ghi chú chưa gửi: đẩy hết đi bằng sendBeacon – iPhone gửi nốt dù trang đã đóng.
+// Vẫn giữ trong hàng chờ: lần mở sau gửi lại, kho Google nhận ra mã cũ nên không bị trùng.
+function beaconAll(){if(!outbox.length||!navigator.sendBeacon)return;
+  var u=cfg.u+"?k="+encodeURIComponent(cfg.k)+"&a=op";
+  outbox.forEach(function(o){try{navigator.sendBeacon(u,JSON.stringify(o));}catch(e){}});}
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")refresh();else beaconAll();});
+window.addEventListener("pagehide",beaconAll);
 window.addEventListener("online",function(){refresh();});
 })();
 </script>
