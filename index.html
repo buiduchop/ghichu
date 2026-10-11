@@ -36,6 +36,7 @@ main>*{max-width:700px;margin-left:auto;margin-right:auto}
 .row:last-child{border-bottom:0}.row:active{background:var(--chip)}
 .box{width:24px;height:24px;flex:none;border-radius:50%;border:2px solid var(--fg2);margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s}
 .box.done{background:var(--accent);border-color:var(--accent)}
+.gbox{flex:none;min-width:24px;font-size:1.35em;line-height:1.05;text-align:center;font-family:"Apple Symbols","Segoe UI Symbol",-apple-system,sans-serif}
 .box.done::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .txt{flex:1;white-space:pre-wrap;word-break:break-word}
 .mark{flex:none;min-width:14px;color:var(--fg2);margin-right:-4px}
@@ -162,7 +163,11 @@ function applyFont(){var fs=snap&&Number(snap.fs);if(fs>0)list.style.fontSize=Ma
 function render(){view=build();list.innerHTML="";var shown=0;applyFont();
   view.forEach(function(it,i){if(it.gone||(!it.t&&it.k===0))return;shown++;
     var row=document.createElement("div");row.className="row";
-    if(it.k>0){var b=document.createElement("div");b.className="box"+(it.k===2?" done":"");b.onclick=function(e){e.stopPropagation();toggle(i);};row.appendChild(b);}
+    if(it.k>0){var b=document.createElement("div"),bx=snap&&snap.bx,dn=it.k===2;
+      // Icon giống máy tính (☐☑, ☆★, ○✔, ▢▣, ◇◆); \uFE0E = hiện dạng chữ, không thành emoji
+      if(bx&&bx.off){b.className="gbox"+(dn?" done":"");b.textContent=(dn?bx.on:bx.off)+"\uFE0E";b.style.color=(dn?bx.onc:bx.offc)||(dn?"var(--accent)":"var(--fg2)");}
+      else b.className="box"+(dn?" done":"");
+      b.onclick=function(e){e.stopPropagation();toggle(i);};row.appendChild(b);}
     if(it.m){var m=document.createElement("div");m.className="mark";m.textContent=it.m;row.appendChild(m);}
     var t=document.createElement("div");t.className="txt";
     // Giữ định dạng giống máy tính: đậm, nghiêng, gạch chân, gạch ngang, màu chữ, tô sáng
