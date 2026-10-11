@@ -124,6 +124,8 @@ function failText(err){
 function findIdx(items,o){if(o.i>=0&&o.i<items.length&&items[o.i]&&!items[o.i].gone&&items[o.i].t===o.line)return o.i;
   for(var j=0;j<items.length;j++)if(!items[j].gone&&items[j].t===o.line)return j;return -1;}
 var waiting=0;
+// Bỏ dòng trống, giữ xuống dòng bên trong mục
+function clean(s){return String(s||"").split("\n").map(function(l){return l.trim();}).filter(function(l){return l;}).join("\n");}
 function build(){var items=((snap&&snap.items)||[]).map(function(x,i){return{t:x.t,k:x.k,r:x.r,m:x.m,src:i};});
   var at=(snap&&snap.at)||0,used={};waiting=0;
   ops.concat(outbox).forEach(function(o){
@@ -133,12 +135,13 @@ function build(){var items=((snap&&snap.items)||[]).map(function(x,i){return{t:x
     if(o.op==="add"){var task=o.task==null?!!(snap&&snap.taskdef):o.task;
       var lines=String(o.t).split("\n").map(function(l){return l.replace(/\s+$/,"");}).filter(function(l){return l.trim();});
       // dòng mới được máy tính thêm vào cuối -> dò từ cuối lên
-      if(seen){var hit=[],ok=lines.every(function(l){for(var j=items.length-1;j>=0;j--)if(items[j].src!=null&&!used[j]&&hit.indexOf(j)<0&&items[j].t===l){hit.push(j);return true;}return false;});
-        if(ok){hit.forEach(function(j){used[j]=1;});return;}}
-      waiting++;lines.forEach(function(l){items.push({t:l,k:task?1:0,pending:mark});});return;}
+      // Một tin (kể cả nhiều dòng) = MỘT mục, giống trên máy tính
+      var one=lines.map(function(l){return l.trim();}).join("\n");if(!one)return;
+      if(seen){for(var j=items.length-1;j>=0;j--)if(items[j].src!=null&&!used[j]&&items[j].t===one){used[j]=1;return;}}
+      waiting++;items.push({t:one,k:task?1:0,pending:mark});return;}
     var j=findIdx(items,o);if(j<0)return;
     if(o.op==="toggle"&&items[j].k>0){var want=o.done?2:1;if(seen&&items[j].k===want)return;items[j].k=want;items[j].pending=mark;waiting++;return;}
-    if(o.op==="edit"){items[j].t=String(o.t).replace(/\n/g," ").trim();items[j].r=null;items[j].pending=mark;waiting++;}
+    if(o.op==="edit"){items[j].t=clean(o.t);items[j].r=null;items[j].pending=mark;waiting++;}
     else if(o.op==="delete"){items[j].gone=true;waiting++;}
   });
   return items;}
@@ -185,7 +188,7 @@ function openEdit(i){var it=view[i];if(!it)return;if(it.src==null){alert("Dòng 
 function closeEdit(){editing=-1;$("sheet").className="sheet";render();}
 $("btnCancel").onclick=closeEdit;
 $("sheet").onclick=function(e){if(e.target===this)closeEdit();};
-$("btnSave").onclick=function(){var it=view[editing],t=$("editText").value.replace(/\n/g," ").trim();closeEdit();if(!it)return;
+$("btnSave").onclick=function(){var it=view[editing],t=clean($("editText").value);closeEdit();if(!it)return;
   if(!t){queue({op:"delete",i:it.src,line:it.t});return;}
   if(t!==it.t)queue({op:"edit",i:it.src,line:it.t,t:t});};
 $("btnDel").onclick=function(){var it=view[editing];if(!it)return;if(!confirm("Xóa dòng này khỏi ghi chú?"))return;closeEdit();queue({op:"delete",i:it.src,line:it.t});};
