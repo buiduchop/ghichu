@@ -19,14 +19,18 @@
 :root{--bar:rgba(242,242,247,.82);--bg:#f2f2f7;--card:#fff;--fg:#1c1c1e;--fg2:#6e6e73;--line:rgba(0,0,0,.08);--accent:#0a84ff;--danger:#ff3b30;--chip:rgba(0,0,0,.06);--input:#fff;--ok:#30a14e}
 @media (prefers-color-scheme:dark){:root{--bar:rgba(0,0,0,.78);--bg:#000;--card:#1c1c1e;--fg:#f5f5f7;--fg2:#98989d;--line:rgba(255,255,255,.10);--chip:rgba(255,255,255,.10);--input:#1c1c1e;--ok:#30d158}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-header{position:sticky;top:0;z-index:5;padding:calc(env(safe-area-inset-top) + 14px) 18px 6px;display:flex;align-items:baseline;gap:10px;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+/* Khung cố định bằng đúng phần màn hình còn thấy (trừ bàn phím) – như Zalo: trên là danh sách, dưới là ô gõ sát bàn phím */
+#app{position:fixed;left:0;right:0;top:0;height:100%;display:flex;flex-direction:column;overflow:hidden}
+header{flex:none;padding:calc(env(safe-area-inset-top) + 14px) 18px 6px;display:flex;align-items:baseline;gap:10px}
 header h1{margin:0;font-size:30px;font-weight:700;letter-spacing:-.5px;flex:1}
 #status{font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:6px}
 #status i{width:8px;height:8px;border-radius:50%;background:#8e8e93;display:inline-block}
 #status.ok i{background:var(--ok)}#status.bad i{background:var(--danger)}
-#sub{font-size:13px;color:var(--fg2);padding:2px 18px 12px;min-height:18px}
-main{padding:0 14px 150px;max-width:700px;margin:0 auto}
+#sub{flex:none;font-size:13px;color:var(--fg2);padding:2px 18px 10px;min-height:18px}
+#app.kb header{padding-top:8px}#app.kb header h1{font-size:22px}#app.kb #sub{display:none}
+main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:0 14px 14px}
+main>*{max-width:700px;margin-left:auto;margin-right:auto}
 .card{background:var(--card);border-radius:14px;overflow:hidden}
 .row{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);min-height:48px}
 .row:last-child{border-bottom:0}.row:active{background:var(--chip)}
@@ -40,16 +44,18 @@ main{padding:0 14px 150px;max-width:700px;margin:0 auto}
 .st{flex:none;align-self:flex-end;font-size:12px;line-height:1.6;color:var(--fg2);margin-left:-4px}
 .empty{color:var(--fg2);text-align:center;padding:40px 20px;font-size:15px}
 .hint{color:var(--fg2);font-size:13px;text-align:center;margin:10px 0 0}
-footer{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(env(safe-area-inset-bottom) + 8px);background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--line)}
+footer{flex:none;padding:8px 10px calc(env(safe-area-inset-bottom) + 8px);background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--line)}
 .composer{display:flex;align-items:flex-end;gap:8px;max-width:700px;margin:0 auto}
 #task{flex:none;height:40px;min-width:40px;border-radius:20px;border:0;background:var(--chip);color:var(--fg2);font-size:18px;padding:0 10px}
 #task.on{color:var(--accent)}
 #input{flex:1;resize:none;border:1px solid var(--line);background:var(--input);color:var(--fg);border-radius:20px;padding:9px 14px;font:inherit;max-height:140px;outline:none}
 #send{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:20px}
 #send:disabled{opacity:.35}
-.sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;z-index:9}
+#app.kb footer{padding-bottom:8px}
+.sheet{position:absolute;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;z-index:9}
 .sheet.show{display:flex}
 .sheet .panel{width:100%;background:var(--bg);border-radius:16px 16px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px)}
+#app.kb .sheet .panel{padding-bottom:12px}
 .sheet textarea{width:100%;min-height:110px;border-radius:12px;border:1px solid var(--line);background:var(--input);color:var(--fg);font:inherit;padding:10px 12px;outline:none}
 .btns{display:flex;gap:10px;margin-top:12px}
 .btns button{flex:1;height:44px;border-radius:12px;border:0;font:inherit;font-weight:600;background:var(--chip);color:var(--fg)}
@@ -57,6 +63,7 @@ footer{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(env(safe-are
 </style>
 </head>
 <body>
+<div id="app">
 <header><h1>Ghi chú</h1><div id="status"><i></i><span>Đang kết nối…</span></div></header>
 <div id="sub"></div>
 <main><div class="card" id="list"></div><p class="hint" id="hint"></p></main>
@@ -66,6 +73,7 @@ footer{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(env(safe-are
 <div class="sheet" id="sheet"><div class="panel"><textarea id="editText"></textarea>
 <p class="hint" id="editNote" style="display:none;text-align:left">Dòng này có định dạng (đậm, màu…). Sửa chữ trên iPhone thì dòng sẽ thành chữ thường; tick ✓ hoặc xóa thì không ảnh hưởng.</p>
 <div class="btns"><button class="del" id="btnDel">Xóa dòng</button><button id="btnCancel">Hủy</button><button class="primary" id="btnSave">Lưu</button></div></div></div>
+</div>
 <script>
 (function(){
 var $=function(id){return document.getElementById(id);};
@@ -168,8 +176,9 @@ function flush(){if(busy||!outbox.length)return;busy=true;var o=outbox[0];
   api("op",o).then(function(st){gen++;outbox.shift();saveOut();busy=false;setStatus(true,"Đã kết nối");apply(st);flush();},
     function(err){busy=false;setStatus(false,failText(err)||(canStore?"Chưa gửi được (mất mạng?) – sẽ tự gửi lại":"Chưa gửi được – GIỮ TRANG NÀY MỞ, có mạng sẽ tự gửi"));if(editing<0)render();setTimeout(flush,5000);});}
 function queue(o){o.id=nid();outbox.push(o);saveOut();render();flush();}
+// Gửi xong: bàn phím tự hạ, danh sách cuộn tới dòng vừa gửi
 function add(){var t=input.value.replace(/\s+$/,"");if(!t.trim())return;queue({op:"add",t:t,task:taskOn()});input.value="";grow();send.disabled=true;
-  setTimeout(function(){window.scrollTo(0,document.body.scrollHeight);},50);}
+  input.blur();toBottom();}
 function toggle(i){var it=view[i];if(!it||it.k===0)return;queue({op:"toggle",i:it.src==null?-1:it.src,line:it.t,done:it.k!==2});}
 function openEdit(i){var it=view[i];if(!it)return;if(it.src==null){alert("Dòng này đang chờ máy tính nhận – sửa được sau khi máy tính đã nhận.");return;}
   editing=i;$("editText").value=it.t;$("editNote").style.display=it.r&&it.r.length?"block":"none";$("sheet").className="sheet show";setTimeout(function(){$("editText").focus();},50);}
@@ -185,7 +194,23 @@ input.addEventListener("input",function(){grow();send.disabled=!input.value.trim
 input.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();add();}});
 send.onclick=add;
 taskBtn.onclick=function(){asTask=!taskOn();ls("qn_task",asTask?"1":"0");paintTask();input.focus();};
-render();refresh();
+// ---- Bàn phím iPhone: khung luôn vừa phần màn hình còn thấy -> danh sách vẫn hiện, ô gõ nằm sát bàn phím ----
+var app=$("app"),main=document.querySelector("main"),vv=window.visualViewport;
+function toBottom(){setTimeout(function(){main.scrollTop=main.scrollHeight;},60);}
+function fit(){if(!vv)return;
+  var kb=vv.height<window.innerHeight-120;      // bàn phím đang mở
+  app.style.height=vv.height+"px";app.style.top=vv.offsetTop+"px";
+  app.className=kb?"kb":"";
+  if(window.scrollY)window.scrollTo(0,0);}
+if(vv){vv.addEventListener("resize",fit);vv.addEventListener("scroll",fit);}
+input.addEventListener("focus",function(){setTimeout(function(){fit();toBottom();},250);});
+input.addEventListener("blur",function(){setTimeout(fit,250);});
+// Chạm hoặc vuốt vào danh sách khi đang gõ: hạ bàn phím (giống Zalo), không mở khung sửa
+var justClosed=false;
+main.addEventListener("touchstart",function(){if(document.activeElement===input){justClosed=true;input.blur();setTimeout(function(){justClosed=false;},400);}},{passive:true});
+main.addEventListener("click",function(e){if(justClosed){e.stopPropagation();e.preventDefault();}},true);
+fit();
+render();refresh();toBottom();
 setInterval(function(){if(document.visibilityState!=="hidden")refresh();},6000);
 // Rời trang (về màn hình chính, khóa máy) khi còn ghi chú chưa gửi: đẩy hết đi bằng sendBeacon – iPhone gửi nốt dù trang đã đóng.
 // Vẫn giữ trong hàng chờ: lần mở sau gửi lại, kho Google nhận ra mã cũ nên không bị trùng.
