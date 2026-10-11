@@ -146,7 +146,19 @@ function build(){var items=((snap&&snap.items)||[]).map(function(x,i){return{t:x
   });
   return items;}
 // Cỡ chữ theo máy tính (đổi cỡ chữ trên máy tính là iPhone đổi theo)
-function applyFont(){var fs=snap&&Number(snap.fs);if(fs>0)list.style.fontSize=Math.max(12,Math.min(32,fs))+"px";}
+// Phông chữ theo máy tính: phông viết tay tải từ Google Fonts (có dấu tiếng Việt); phông Windows -> phông gần giống có sẵn trên iPhone
+var WEBFONT={"Patrick Hand":1,"Mali":1,"Itim":1,"Charm":1,"Dancing Script":1,"Pacifico":1};
+var LOOK={"Arial":"Arial,Helvetica,sans-serif","Tahoma":"Verdana,Tahoma,sans-serif","Calibri":"'Avenir Next',-apple-system,sans-serif",
+  "Bahnschrift":"'Avenir Next Condensed','Arial Narrow',sans-serif","Times New Roman":"'Times New Roman',Times,serif","Cambria":"Georgia,'Times New Roman',serif",
+  "Palatino Linotype":"Palatino,'Palatino Linotype',serif","Consolas":"Menlo,Consolas,monospace"};
+var loadedFont={};
+function applyFont(){var fs=snap&&Number(snap.fs);if(fs>0)list.style.fontSize=Math.max(12,Math.min(32,fs))+"px";
+  var ff=(snap&&snap.ff)||"",css="";
+  if(WEBFONT[ff]){if(!loadedFont[ff]){loadedFont[ff]=1;var l=document.createElement("link");l.rel="stylesheet";
+      l.href="https://fonts.googleapis.com/css2?family="+encodeURIComponent(ff).replace(/%20/g,"+")+"&display=swap";document.head.appendChild(l);}
+    css="'"+ff+"',-apple-system,sans-serif";}
+  else if(LOOK[ff])css=LOOK[ff];
+  list.style.fontFamily=css;}
 function render(){view=build();list.innerHTML="";var shown=0;applyFont();
   view.forEach(function(it,i){if(it.gone||(!it.t&&it.k===0))return;shown++;
     var row=document.createElement("div");row.className="row";
